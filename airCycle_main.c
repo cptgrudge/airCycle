@@ -109,6 +109,15 @@ int main(void) {
         else
             disablePF();
         
+        if(PORTBbits.RB11){
+            LATBbits.LATB4 = 0;
+            LATBbits.LATB5 = 1;
+        }
+        else{
+            LATBbits.LATB4 = 1;
+            LATBbits.LATB5 = 0;
+        }
+        
         
         setPFspd(fanSpeed);
         
@@ -130,11 +139,12 @@ void setup(void){
     
     //set pin modes to output(0) or input(1)
     TRISA = 0x0000; //all output
-    TRISB = 0x0080; //set RB4 to output for red LED
+    TRISB = 0x0880; //set RB4 to output for red LED
                     //set RB5 to output for green LED
                     //set RB8 to output for fan relay control
                     //set RB10 to output for fan PWM control 
                     //set RB7 to input for fan RPM sense (INT0)
+                    //set RB11 to input for button control
                     
     //set initial outputs
     LATA = 0x0000;     //set all outputs to low
