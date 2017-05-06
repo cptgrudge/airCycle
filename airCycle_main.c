@@ -34,7 +34,6 @@
 volatile int readIdx=0, writeIdx=0;
 volatile unsigned int buffer[ADC_BUF_SIZE];
 volatile int value=0;
-volatile float lux = 10.0;
 volatile float targetTemp = 0.0;
 volatile float currentTemp = 70.0;
 volatile char adString[20];
@@ -57,10 +56,14 @@ void __attribute__((__interrupt__,__auto_psv__)) _T5Interrupt(void){
     writeString(adString);                          //write string
 
     //Write current temperature to lower line    
-    sprintf(adString,"%2.1fF cu", currentTemp);  //create string
+    //sprintf(adString,"%2.1fF cu", currentTemp);  //create string
+    //lcd_setCursor(1,0);                             //set location
+    //writeString(adString);                          //write string
+    
+    //Write current RPM to lower line    
+    sprintf(adString,"%4u RPM", getPFrpm());  //create string
     lcd_setCursor(1,0);                             //set location
     writeString(adString);                          //write string
-    
 }
 
 void __attribute__((__interrupt__,__auto_psv__)) _ADC1Interrupt(void) {
@@ -119,13 +122,13 @@ void setup(void){
     
     //set pin modes to output(0) or input(1)
     TRISA = 0x0000; //all output
-    TRISB = 0x0080; //set RB8 to output for fan relay control
-                    //set RB10 to output for fan PWM control 
-                    //set RB7 to input for fan RPM sense (INT0)
+    TRISB = 0x0100; //set RB8 to output for fan relay control
+                    //set RB10 to output for fan PWM control
+                    //set RB8 to input for fan RPM sense (RP8))
                     
     //set initial outputs
     LATA = 0x0000;     //set all outputs to low
-    LATB = 0x0400;     //set RB10 high
+    LATB = 0x0000;     //set all low
 
     //set up for LCD screen
     I2C2CONbits.I2CEN = 0x0;
@@ -165,6 +168,7 @@ void setup(void){
     // Configure A/D interrupt
     _AD1IF = 0; // clear flag
     _AD1IE = 1; // enable interrupt
+    //note default A/D interrupt priority level is 4 
     AD1CON1bits.ADON = 1;   //turn on
 
     // turn on Timer 3, Timer 5
