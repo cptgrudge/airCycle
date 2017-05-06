@@ -57,19 +57,10 @@ void __attribute__((__interrupt__,__auto_psv__)) _T5Interrupt(void){
     writeString(adString);                          //write string
 
     //Write current temperature to lower line    
-    //sprintf(adString,"%2.1fF cu", currentTemp);  //create string
-    //lcd_setCursor(1,0);                             //set location
-    //writeString(adString);                          //write string
-    
-    //Write fan RPM to lower line
-    sprintf(adString,"%4.0f RPM", (float)getPFrpm());  //create string
+    sprintf(adString,"%2.1fF cu", currentTemp);  //create string
     lcd_setCursor(1,0);                             //set location
     writeString(adString);                          //write string
     
-    //Write current lux value to lower line?
-    //sprintf(adString,"%3.1f RPM", lux);  //create string
-    //lcd_setCursor(1,0);                             //set location
-    //writeString(adString);
 }
 
 void __attribute__((__interrupt__,__auto_psv__)) _ADC1Interrupt(void) {
@@ -97,6 +88,9 @@ int main(void) {
     
     disablePF();
     
+    LATBbits.LATB10 = 1;
+    LATBbits.LATB11 = 1;
+    LATBbits.LATB12 = 1;
     
     while(1){   //forever loop
 
@@ -108,16 +102,6 @@ int main(void) {
         }
         else
             disablePF();
-        
-        if(PORTBbits.RB11){
-            LATBbits.LATB4 = 0;
-            LATBbits.LATB5 = 1;
-        }
-        else{
-            LATBbits.LATB4 = 1;
-            LATBbits.LATB5 = 0;
-        }
-        
         
         setPFspd(fanSpeed);
         
@@ -139,19 +123,15 @@ void setup(void){
     
     //set pin modes to output(0) or input(1)
     TRISA = 0x0000; //all output
-    TRISB = 0x0880; //set RB4 to output for red LED
-                    //set RB5 to output for green LED
-                    //set RB8 to output for fan relay control
+    TRISB = 0x0080; //set RB8 to output for fan relay control
                     //set RB10 to output for fan PWM control 
                     //set RB7 to input for fan RPM sense (INT0)
-                    //set RB11 to input for button control
                     
     //set initial outputs
     LATA = 0x0000;     //set all outputs to low
-    LATB = 0x0030;     //set RB4,RB5 to high
+    LATB = 0x0400;     //set RB10 high
 
     //set up for LCD screen
-    //set up for temp sensor
     I2C2CONbits.I2CEN = 0x0;
     I2C2BRG = 0x9D;
     I2C2CONbits.I2CEN = 0x1;
@@ -182,14 +162,10 @@ void setup(void){
     AD1CON1bits.ASAM = 1; // auto-sampling. P21, Sec. 17.7.3.3 in the ADC
        // document says use ASAM=1
     AD1CON1bits.SSRC = 0b010; // Use Timer3 as the conversion trigger
-       // We can also use Timer3 / Timer2 as a 32-bit timer to trigger
-       // A/D sampling/conversion, because the 32-bit timer
-       // will also generate the T3IF event.
 
     AD1CON3bits.SAMC = 3; // auto-sample time = X * TAD (what is X?)
     AD1CON3bits.ADCS = 2; // clock = Y * Tcy (what is Y?)
     
-
     // Configure A/D interrupt
     _AD1IF = 0; // clear flag
     _AD1IE = 1; // enable interrupt

@@ -8,7 +8,7 @@
  * 
  *              PIC resources setup and used by the library are the INTO interrupt,
  *              output compare, and timer 2. Pins used are 15 (RP6) for output compare,
- *              16 (INT0) for INT0 interrupt, and 21 (RB10) for relay control.  
+ *              16 (INT0) for INT0 interrupt, and 24 (RB12) for relay control.  
  */
 
 #include "xc.h"
@@ -131,9 +131,9 @@ int getPFrpm(void){
 //  enablePF function
 //  Description:    Used to enable the PWM fan.
 //  Precondition:   PIC setup() has been run.
-//  Postcondition:  RB10 is set to 1, PWM fan relay is active.
+//  Postcondition:  RB12 is set to 1, PWM fan relay is active.
 void enablePF(){
-    asm("bset LATB,#10");
+    asm("bset LATB,#12");
     return;
 }// end enablePF
 
@@ -141,9 +141,9 @@ void enablePF(){
 //  disablePF function
 //  Description:    Used to disable the PWM fan.
 //  Precondition:   PIC setup() has been run.
-//  Postcondition:  RB10 is set to 0, PWM fan relay is inactive.
+//  Postcondition:  RB12 is set to 0, PWM fan relay is inactive.
 void disablePF(){
     setPFspd(0);
-    asm("bclr LATB,#10");
+    asm("bclr LATB,#12");
     return;
 }// end disablePF
