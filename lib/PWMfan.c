@@ -53,6 +53,34 @@ void __attribute__((__interrupt__,__auto_psv__)) _INT0Interrupt(void)
 
 }
 
+//  Capture Interrupt Service Routine
+//  Description:    Used by the PWMfan library
+//  Precondition:   A rising edge on the PIC RP8 pin has been received. 
+//  Postcondition:  The current RPM has been stored within the rpmBuf buffer
+//                  and the rpmIdx index incremented.
+unsigned int timePeriod= 0;
+void __attribute__((__interrupt__)) _IC1Interrupt(void)
+{
+    start = end;    //set start to the last end found
+    end = IC1BUF;   //set end to IC
+    _IC1IF = 0;     //reset IC1 interrupt flag
+
+    if (end > start)                //record TMR3 difference
+        numCycles = end - start;
+    else
+        numCycles = (PR3 - start) + end;
+    
+    numCycles = numCycles << 6;     //record number of cycles in one period
+                                    //timer 3 is 1:64 prescalar
+    
+    numCycles = numCycles << 1;     //number of cycles in one revolution
+    
+    rpmBuf[rpmIdx++] = 960000000/numCycles;     //store RPM, increment index
+    rpmIdx &= (RPM_BUF_SIZE - 1);               //reset index
+
+}
+
+
 //  initPF function  
 //  Description:    Initializes PIC settings for interaction with the PWM fan
 //  Precondition:   PIC is active and running, ready to run program
@@ -60,15 +88,31 @@ void __attribute__((__interrupt__,__auto_psv__)) _INT0Interrupt(void)
 //                  with the PWM fan.
 void initPF(void){
     
-    // setup PPS
+    // setup PPS - output compare 1
     __builtin_write_OSCCONL(OSCCON & 0xbf); // unlock PPS
     RPOR3bits.RP6R = 18; // Use Pin RP6 (Pin 15) for Output Compare 1 (Table 10-3)
     __builtin_write_OSCCONL(OSCCON | 0x40); // lock PPS
-        
+
+    // setup PPS - input capture 1
+    __builtin_write_OSCCONL(OSCCON & 0xbf); // unlock PPS
+    RPINR7bits.IC1R = 8; // Use Pin RP8 (Pin 17) for Input Capture 1 (Table 10-2)
+    __builtin_write_OSCCONL(OSCCON | 0x40); // lock PPS
+
     //setup INT0
-    _INT0EP = 0;  // detect rising edge.
-    _INT0IF = 0;  // reset INT0 interrupt flag
-    _INT0IE = 1;  // enable INT0 interrupt
+    //_INT0EP = 0;  // detect rising edge.
+    //_INT0IF = 0;  // reset INT0 interrupt flag
+    //_INT0IE = 1;  // enable INT0 interrupt
+    
+    // setup input capture 1
+    IC1CONbits.ICM = 0b00;  // Disable Input Capture 1 module
+    IC1CONbits.ICTMR = 0;   // Select Timer3 as the IC1 Time base
+    IC1CONbits.ICI = 0b00;  // Interrupt on every capture event
+    IC1CONbits.ICM = 0b011; // Generate capture event on every Rising edge
+
+    // Enable Capture Interrupt
+    IPC0bits.IC1IP = 1; // Setup IC1 interrupt priority level
+    IFS0bits.IC1IF = 0; // Clear IC1 Interrupt Status Flag
+    IEC0bits.IC1IE = 1; // Enable IC1 interrupt
     
     // setup output compare 1
     OC1CON = 0x0000;        // reset, OC1 off
@@ -114,7 +158,7 @@ int getPFrpm(void){
 
     unsigned int rpm = 0;
     
-    if (!_RB10) return 0;        //fan is off, just return 0
+    if (!_RB12) return 0;        //fan is off, just return 0
     
     int index = rpmIdx;         //get current rpmBuf index
     
