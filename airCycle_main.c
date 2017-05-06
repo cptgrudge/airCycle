@@ -88,10 +88,6 @@ int main(void) {
     
     disablePF();
     
-    LATBbits.LATB10 = 1;
-    LATBbits.LATB11 = 1;
-    LATBbits.LATB12 = 1;
-    
     while(1){   //forever loop
 
         fanRPM = getPFrpm();
